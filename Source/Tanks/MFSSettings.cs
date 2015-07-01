@@ -17,10 +17,15 @@ namespace RealFuels
         public static bool partUtilizationTweakable = false;
         public static string unitLabel = "u";
 
+        public static bool basemassUseTotalVolume = false;
+
         public static HashSet<string> ignoreFuelsForFill;
         public static Tanks.TankDefinitionList tankDefinitions;
 
 		public static Dictionary<string, HashSet<string>> managedResources;
+        public static Dictionary<string, double> resourceVsps;
+
+        private static Dictionary<string, ConfigNode[]> overrides;
 
         static string version;
         public static string GetVersion ()
@@ -45,11 +50,58 @@ namespace RealFuels
 			Destroy (this);
 		}
 
+        public static void SaveOverrideList(Part p, ConfigNode[] nodes)
+        {
+            string id = GetPartIdentifier(p);
+            if (overrides.ContainsKey(id))
+            {
+                Debug.Log("*MFT* ERROR: overrides already stored for " + id);
+            }
+            else
+            {
+                overrides[id] = nodes;
+            }
+        }
+
+        public static ConfigNode[] GetOverrideList(Part p)
+        {
+            string id = GetPartIdentifier(p);
+            if (overrides.ContainsKey(id))
+            {
+                return overrides[id];
+            }
+            Debug.Log("*MFT* WARNING: no entry in overrides for " + id);
+            return new ConfigNode[0];
+        }
+
+        private static string GetPartIdentifier(Part part)
+        {
+            string partName = part.name;
+            if (part.partInfo != null)
+                partName = part.partInfo.name;
+            partName = partName.Replace(".", "-");
+            partName = partName.Replace("_", "-");
+            return partName;
+        }
+
         public static void Initialize ()
         {
 			ignoreFuelsForFill = new HashSet<string> ();
 			tankDefinitions = new Tanks.TankDefinitionList ();
 			managedResources = new Dictionary<string,HashSet<string>> ();
+            overrides = new Dictionary<string, ConfigNode[]>();
+
+            // fill vsps
+            resourceVsps = new Dictionary<string, double>();
+            foreach (ConfigNode n in GameDatabase.Instance.GetConfigNodes("RESOURCE_DEFINITION"))
+            {
+                if (n.HasValue("vsp"))
+                {
+                    double dtmp;
+                    if (double.TryParse(n.GetValue("vsp"), out dtmp))
+                        resourceVsps[n.GetValue("name")] = dtmp;
+                }
+            }
 
             ConfigNode node = GameDatabase.Instance.GetConfigNodes ("MFSSETTINGS").LastOrDefault ();
             Debug.Log ("[MFS] Loading global settings");
@@ -76,6 +128,9 @@ namespace RealFuels
 				if (node.HasValue ("unitLabel")) {
 					unitLabel = node.GetValue ("unitLabel");
 				}
+                if (bool.TryParse(node.GetValue("basemassUseTotalVolume"), out tb)) {
+                    basemassUseTotalVolume = tb;
+                }
 
 				ConfigNode ignoreNode = node.GetNode ("IgnoreFuelsForFill");
 				if (ignoreNode != null) {

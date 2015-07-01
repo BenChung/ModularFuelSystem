@@ -6,40 +6,115 @@ ialdabaoth (who is awesome) created Modular Fuels, and this is a fork of the Rea
 License remains CC-BY-SA as modified by ialdabaoth.
 Source: https://github.com/NathanKell/ModularFuelSystem (shared repository between RF and Modular Fuel Tanks).
 
-Also included: Module Manager (by sarbian, swamp_ig, and ialdabaoth). See the Module Manager thread for details and license and source: http://forum.kerbalspaceprogram.com/threads/55219
-Module Manager is required for RF to work.
+Also included (all are required)
+* Module Manager by sarbian, swamp_ig, and ialdabaoth. See thread for details: http://forum.kerbalspaceprogram.com/threads/55219
+* Community Resource Pack: See thread for details: http://forum.kerbalspaceprogram.com/threads/91998
+* SolverEngines by NathanKell and blowfish. See thread for details: http://forum.kerbalspaceprogram.com/threads/122976
+
+
+Includes ullage simulation code based on that by HoneyFox in EngineIgnitor, reused under MIT License. See end of readme for license details.
+Includes ConfigNodeExtensions by stupid_chris, license CC-BY-SA.
 
 DESCRIPTION:
 Real Fuels does the following:
-*It converts resources to use 1 unit = 1 liter at STP, and changes tank capacity to accord with that.
-*It allows any supported tank to be filled with exactly how much or how little fuel you want, of whatever type you want (though different tanks may allow or disallow certain fuels; jet fuel tanks won't take oxidizer for instance). Tank dry masses are set to replicate real-world rocket stages.
-*Real world fuels are added, and engines/RCS can use them, with realistic stats (NOTE: You NEED an engine pack in order for engines/RCS to use the new fuels).
-*Engine/RCS thrust scales with Isp, just like in real life.
-*Engines/RCS can have multiple configurations (for example, an upper stage could support a kerosene + liquid oxygen mode, and a liquid hydrogen + liquid oxygen mode). These modes have different thrust, Isp, etc.
-*Engines/RCS can have varying techlevels: different performance characteristics for the same part, based on the techlevel you select (techlevels can be tied to R&D nodes for career games).
-*Engines can have limited throttling, and (via installation of the Engine Ignitor mod by HoneyFox) can have limited ignitions.
+* It converts resources to use 1 unit = 1 liter at STP, and changes tank capacity to accord with that.
+* It allows any supported tank to be filled with exactly how much or how little fuel you want, of whatever type you want (though different tanks may allow or disallow certain fuels; jet fuel tanks won't take oxidizer for instance). Tank dry masses are set to replicate real-world rocket stages.
+* Real world fuels are added, and engines/RCS can use them, with realistic stats (NOTE: You NEED an engine pack in order for engines/RCS to use the new fuels).
+* Engines/RCS can have multiple configurations (for example, an upper stage could support a kerosene + liquid oxygen mode, and a liquid hydrogen + liquid oxygen mode). These modes have different thrust, Isp, etc.
+* Engines/RCS can have varying techlevels: different performance characteristics for the same part, based on the techlevel you select (techlevels can be tied to R&D nodes for career games).
+* Configs and techlevels can have their own unlock costs
+* Engines can have limited throttling, and can have limited ignitions.
+* Engines can be subject to ullage requirements.
+* For advanced features, engines use ModuleEnginesRF (powered by SolverEngines).
 
 INSTALL INSTRUCTIONS:
-1. Delete any existing ModularFuelTanks folder or RealFuels folder in your KSP/GameData folder. This is VITAL.
+1. Delete any existing ModularFuelTanks folder or RealFuels folder in your KSP/GameData folder. Remove CommunityResourcePack and SolverEngines if they exist as well. This is VITAL.
 2. Extract this archive to your KSP/GameData folder
-3. Download and install an engine pack. This probably means grabbing Realism Overhaul, which is HIGHLY recommended for use with RF. Also, now that most RCS fuels do not flow everywhere but instead flow like LF/Ox, you might want CrossFeedEnabler for radial RCS tanks.
+3. Download and install an engine pack. Your choices currently are Stockalike RF Configs or RealismOverhaul. See the second post in the RealFuels thread for information.
 
 USAGE:
 You can access RF-related GUIs ingame by tweakables, or by going to the Action Group Editor mode in the VAB/SPH (i.e. where you assign things to action groups) and clicking on a tank, engine, or RCS module. If supported, the GUI will appear.
 
 For tanks:
 At the top will appear the total tank mass (wet), the tank dry mass, the available, used, and total volume (in liters). Below appears the set of resources that may be added to the tank, and the current amounts and max amounts (if any).
-If there are engines on the vessel, and available volume in the tank, autoconfigure buttons will appear at the bottom of the list, one for each fuel mixture used by the engines on the vessel. When you hover the cursor over an autoconfigure button, a tooltip will appear showing the engines that use that mixture. Click an autoconfigure button to automatically configure remaining volume for that mixture.
+If there are engines on the vessel, and available volume in the tank, autoconfigure buttons will appear at the top of the list, one for each fuel mixture used by the engines on the vessel. When you hover the cursor over an autoconfigure button, a tooltip will appear showing the engines that use that mixture. Click an autoconfigure button to automatically configure remaining volume for that mixture.
 Note that gases and electric charge have multiple "units" per tank liter, since gases are given in liters at STP but stored under pressure, and electric charge is in kJ.
+When you right-click on a tank, you can also access the 'remove all' and the 'configure for' buttons.
 
 For engines/RCS:
 At the top are buttons for changing the current engine's configuration. Then there are the buttons for changing techlevel. They will have X if a change in that direction is unavailable. Below that are stats for the current config and TL. NOTE that if your RCS uses a fuel that is set to STACK_PRIORITY_SEARCH rather than ALL_VESSEL (anything except MonoPropellant) you need to have fuel feeding your RCS thrusters (i.e. treat them like radial engines). It is suggested you get CrossFeedEnabler to help with this.
 
 
-AN OVERVIEW OF FUEL TYPES AND TANK TYPES AND TECH LEVELS/ENGINE TYPES ARE BELOW THE CHANGELOG
+AN OVERVIEW OF FUEL TYPES AND TANK TYPES AND TECH LEVELS/ENGINE TYPES AND UPGRADE COSTS ARE BELOW THE CHANGELOG
 
 ==========
 Changelog:
+v10.4.1
+* Fix throttle/ignition for throttle-locked (solids).
+* Fix to report nominal propellant status when pressurefed OK and ullage disabled.
+
+v10.4
+* Update for KSP 1.0.4.
+* Ullage and limited ignitions now included, works like EngineIgnitor though the module configuration is different. If you set EI configs in your ModuleEngineConfigs CONFIG nodes, however, those will be read just fine by RF.
+* Spaceplane part volumes and tank types tweaked for better utility.
+* TweakScale support for engines.
+
+v10.3.1
+* Readme update,
+* Fixed an NRE that killed loading under certain circumstances.
+* Do a better search for which engines are on a ship.
+
+v10.3
+* Added cost to unlock new configurations and new TLs for engines. Cost can be fully configured both globally and per part config, and can take from funds and/or science. See UPGRADE COSTS below.
+* Add hsp for Furfurfyl Alcohol.
+* Make the GUI draggable in action editor too.
+* Update for latest SolverEngines.
+* Clamp chamber temp to be no lower than part internal temp.
+* Allow random variation in fuel flow (defaults to 0 variation, set varyThrust to a >0 number to enable). Thrust variation is multiplicative, and will be in the range +/- (global varyThrust * ModuleEnginesRF.varyThrust). ModuleEnginesRF.varyThrust defaults to 1.0. Example: you set global varyThrust (in RFSETTINGS) to 0.008. Then all engines that use ModuleEnginesRF will have +/- 0.8% variation in their thrust during flight.
+* Fix a bug in detecting engines to autoconfigure for: let's check ourselves too.
+* Fix issues in basemass / basecost overrides in ModuleFuelTank nodes.
+
+v10.2
+* Allow time-based thrust curves.
+* Fix thrust curves to actually work.
+* Add more specific heat capacities for resources.
+* Fix NaN with SolverEngines.
+* basemass now defaults for being for the entire part, not just the utilized portion (i.e. utilization slider is ignored for basemass, always 100%). This will marginally increase tank masses. This can be toggled in MFSSettings.cfg.
+* Update volume and type of some spaceplane adapter tanks.
+* (Finally!) add nacelleBody and radialEngineBody.
+* Fix typo with large Xenon tank; properly patched now.
+* Support any case for 'Full' when setting amount in a TANK.
+* Fix when engine configs could sometimes be empty.
+* Fix up boiloff loss rates for KSP 1.0 heating.
+* Add some heat loss when propellant boils off (due to vaporization heat).
+
+v10.1
+* Added specific heats for most of the resources (thanks stratochief!).
+* Revised temperature gauge for rocket engines.
+* Set tanks with cryo propellants to their boiling points during prelaunch when pumps (i.e. launch clamps) are connected, so they don't start way above BP.
+* Make life support waste resources not fillable.
+* Compatibility with Ven's Stock Revamp for the RF cloned parts
+
+v10.0
+* SAVE-BREAKING.
+* KSP 1.0 support.
+* Remove thermal fin and radiator.
+* Use Community Resource Pack for our resources, don't add resources in RF.
+* Xenon tank type is removed; all of these tanks use ElectricPropulsion now.
+* Now have multiple different solid fuel resources, and thus multiple different solid fuel tank types.
+* Add module info in the editor tooltip for tanks
+* Engine info / configuration info will only display for the master ModuleEngineConfigs on the part.
+* Disable MEC event firing on configuration change (was killing FAR).
+* Updating an engine config will properly propagate to symmetry counterparts.
+* Updating the engine config of an isMaster=true module can propagate changes to isMaster=false modules on the same part (and will propagate properly across symmetry counterparts). Example: Change the main engine config and the vernier config will auto-update. Done by, for each CONFIG, adding an OtherModules {} node. Inside are key-value pairs, where key = engineID of other module and value is config to switch to.
+* Separate settings for RF engines (RFSETTINGS) and tanks (still MFSSETTINGS).
+* Remove deprecated old version of hybrid engines (the one that is essentially MultiModeEngine).
+* Speed up ModuleEngineConfigs a lot, cut the excess bits from ModuleHybridEngines.
+* Fix issue with heat multiplier
+* Rewrite floatcurve-modder to respect tangents.
+* Massively refactor engines code. RealFuels, like AJE, will use an engine solver now. The new engine module (ModuleEnginesRF) handles thrust curves, throttle speed, emission and internal engine temperature, automatically extending Isp curves to 0 Isp, etc.
+* MEC (and MHE) default to using weak typing: type = ModuleEngines means apply to ModuleEngines or anything derived from it (same for ModuleRCS etc). You can disable this feature per-module if needed.
+
 v9.1
 * Fixed stock RCS and xenon tank volumes.
 * Don't pump into tanks if their flow has been turned off.
@@ -419,7 +494,7 @@ TANK TYPES
 
 * ServiceModule: Used for service modules and other pressure-fed tanks. You need this for pressure-fed engines (RCS are pressure-fed engines). Due to supporting up to 200atm of pressure rather for resources than just the 1.8 or so that non-highly-pressurized tanks do, it's much heavier. Also can store electricity and life support resources. Features more insulation for the cryogenic resources. Examples: Able/Delta upper stage, Apollo Service Module.
 
-* Fuselage: A heavier version of ServiceModule, used for aircraft/spaceplanes (or to simulate old, massive tanks). Examples: the electronics and life support section of a spaceplane.
+* Fuselage: A heavier version of ServiceModule, used for aircraft/spaceplanes (or to simulate old, massive tanks). Examples: the electronics and life support section of a spaceplane, the WAC Corporal sustainer.
 
 * Cryogenic: Highly insulated tank. Has the level of insulation (and low boiloff) of a modern cryogenic tank. Slightly heavier than Default due to the increased insulation. Example: Delta IV Common Core Booster.
 
@@ -436,15 +511,15 @@ Terms: SL = sea level, TWR = thrust to weight ratio. Note that in RF, all engine
 
 So, first RF classifies each engine it supports by type. The types are:
 
-O = Orbital maneuvering system. Designed for tons and tons of restarts, and vacuum-only use. Pressure-Fed. High vac Isp, very poor SL isp, lowest TWR. Usually hypergolic. Real life examples: Apollo SPS, Shuttle OME. KSP examples: LV-1, LV-909, Poodle.
+O = Orbital maneuvering system. Designed for tons and tons of restarts, and vacuum-only use. Pressure-Fed. High vac Isp, very poor SL isp, lowest TWR. Usually hypergolic. Real life examples: Apollo SPS, Shuttle OME. KSP example: LV-1
 
-U = Upper stage. At most a couple restarts. Same Vac Isp as O, better SL Isp, better TWR. Real life example: the Titan's LR-91. KSP doesn't really have any of these, they'd be somewhere between the LV-909 and the LV-T45. Given the way it's shaped, I made the Skipper one, for example.
+U = Upper stage. At most a couple restarts. Same Vac Isp as O, better SL Isp, better TWR. Real life example: the Titan's LR-91. KSP example: KR-2L Rhino.
 
-U+ = Upper stage optimized for vac use. Aka "O with a turbopump." Highest Vac Isp (higher than O). Lower TWR than U. That's what + means, higher vac, lower SL, lower TWR. Real life examples: the Centaur's RL-10. KSP doesn't have any examples, but KW's Apollo-SPS lookalike performs like one (though it is properly made type O by me, given what the real SPS was). Hydrolox is the fuel mode of choice.
+U+ = Upper stage optimized for vac use. Aka "O with a turbopump." Highest Vac Isp (higher than O). Lower TWR than U. That's what + means, higher vac, lower SL, lower TWR. Real life examples: the Centaur's RL-10. KSP examples: LV-909, Poodle.
 
-L = lower stage. No restarts. Lowest Vac Isp, highest SL Isp barring Aerospike, highest TWR. Real life examples: RD-170 and 180 on Zenit and Atlas V. KSP example: the Mainsail, obviously. (Although with its Isp unchanged, it's really an L+, so that's how I rate it.) Fuel is usually kerolox, though could be hypergolic or even hydrolox.
+L = lower stage. No restarts. Lowest Vac Isp, highest SL Isp barring Aerospike, highest TWR. Real life examples: RD-170 and 180 on Zenit and Atlas V. Fuel is usually kerolox, though could be hypergolic or even hydrolox. KSP example: the Mainsail, obviously.
 
-L+ = same changes as U+: higher IspV, lower IspSL, lower TWR. Designed for a single-stage-to-orbit stack (or at least an engine that's never staged away even if boosters are). Real life example: Space Shuttle SSME. KSP example: LV-T45. Note that in real life most rockets have large lower stages and small upper stages, so most real life lower stage engines are somewhere between L and L+, if not outright L+.
+L+ = same changes as U+: higher IspV, lower IspSL, lower TWR. Designed for a single-stage-to-orbit stack (or at least an engine that's never staged away even if boosters are). Real life example: Space Shuttle SSME. Note that in real life most rockets have large lower stages and small upper stages, so most real life lower stage engines are somewhere between L and L+, if not outright L+. KSP example: LV-T45, Skipper.
 
 A = Aerospike. Note that in real life nozzle losses are only 15% or so, and most of the efficiency loss at sea level is because there's air there, not because the nozzle is the wrong shape. For now they have the Isp of a U in vacuum, and 0.9x that at sea level. Real life examples: J-2T-250k (plug nozzle mod of the Saturn V J-2), the linear aerospike on the X-33. KSP Examples: obvious.
 
@@ -454,16 +529,75 @@ S+ = Solid for vac use, lower SL, higher Vac Isp.
 
 N = Nuclear Thermal. Approximately same ratio of IspV to IspSL as U. Uses a solid core reactor to heat reaction mass. Very low TWR, very high Isp. Real life examples: the various Project NERVA engines, RD-0410. KSP example: LV-N.
 
+NOTE: RCS uses type 'L' for the Isp and TWR multipliers; in terms of actual performance it's like O.
+
 What Isp an engine has is determind by grabbing its type, checking its tech level, and getting the appropriate entry in the TLTIsps area of RealSettings.cfg. Then any appropriate multipliers are applied (in the engine CONFIG).
 
 Engines have minimum tech levels; they aren't available before that. You can, however, upgrade past that. In fact, you are HIGHLY encouraged to upgrade any engine, after placing it in the VAB, to your maximum available TL. Engines default to the lowest TL they can.
 
 Rough TL to year table:
-TL0: 1945+, WW2 and immediate postwar
-TL1: 1955+, early Space Age rockets (Redstone, R-5, Vanguard)
-TL2: 1960+, Mercury, Vostok (Sputnik is halfway between TL1 and TL2)
-TL3: 1963+, Gemini, early Apollo stuff
-TL4: 1968+, Late Apollo
-TL5: 1973+, Apollo Applications Program, etc.
-TL6: 1980+, the Shuttle era
-Tl7: 1995+, the present day.
+TL0: 1945-1955, WW2 and early rocketry.
+TL1: 1957+, early Space Age rockets (straddles the divide between Redstone/Vanguard/R-5, and Atlas/R-7).
+TL2: 1962+, Gemini and Saturn I (not IB), Voskhod/Molniya.
+TL3: 1967+, Apollo
+TL4: 1968+, Apollo Applications Program, N1, etc.
+TL5: 1978+, Shuttle etc.
+TL6: 1985+, the Shuttle era, 80s and 90s LVs.
+Tl7: 2005+, the present day.
+
+=========================
+UPGRADE COSTS
+It can cost funds or science to unlock an engine config and/or increase the tech level. Upgrade costs are controlled by global settings and by per-part settings. In general, it costs a fixed amount of funds and/or science to unlock an engine config, and it costs a fixed amount of funds and/or science, times (desired new tech level - original engine tech level) to unlock a new tech level (so going from TL3->4 is less expensive than 4->5 for a starts-at-TL3 engine).
+
+CONFIG settings:
+If a CONFIG has an entryCost, that will be its cost in funds to unlock. If it has a sciEntryCost, that will be its cost in science to unlock. If it has a techLevelEntryCost, that will be the base cost in funds to unlock a new TL (see above re the per-TL costs changing), and same for techLevelSciEntryCost. Per-config entry costs can also have multipliers and subtractors. This means if one CONFIG is very similar to another CONFIG (on that or another engine), you can get a reduction in cost if you've unlocked the other CONFIG. You can add a entryCostMultipliers {} node to the CONFIG and have a list of the other config(s)' names and their multipliers, like LR89-NA-6 = 0.5 (which will mean the current config costs only half as much to unlock if LR89-NA-6 is unlocked). This applies to both funds and science. You can do the same with the entryCostSubtractors {} node, except in this case, the value is subtracted from the final cost, rather than the final cost being multiplied by the value. In this case, the subtractive value will be multiplied by configCostToScienceMultiplier if the cost is a science cost (see below for configCostToScienceMultiplier).
+
+Global settings (configs):
+configEntryCostMultiplier: if no specific costs are set, then config entry cost will be (this * config.cost). So if the config has no extra cost (or a negative cost), the entrycost will be 0. Default 20.
+configScienceCostMultiplier: Works like above for creating the science entry cost. Default 0.
+configCostToScienceMultiplier: Used when subtracting from a config unlock science cost based on other unlocked configs. See above. Default 0.1.
+
+Global settings (techlevels):
+techLevelEntryCostFraction: The fixed cost in funds for unlocking a new techlevel for a CONFIG, if it is not specified in the CONFIG (see above), is based on the this times the sum of the config entry cost and the part's entry cost. Default 0.1.
+techLevelScienceEntryCostFraction: The fixed cost in science for unlocking a new techlevel for a CONFIG, if it is not specified in the CONFIG (see above), is based on the this times the sum of the config's science entry cost and (the part's entry cost times configScienceCostMultiplier). Default 0.
+
+usePartNameInConfigUnlock: If true, the part name will be prepended to the config name when checking for whether configs are unlocked. If you tend to use the same name for configs across multiple engines (i.e. both Mainsail and Poodle have `LqdOxygen+LqdHydrogen` configs) you want this true. If you are RO and each CONFIG represents a specific engine (and multiple parts may implement the same engine) you want this false. Default true (but RO sets it to false).
+
+=========================
+ULLAGE AND LIMITED IGNITIONS
+RealFuels now integrates limited ignitions and support for ullage and pressure-fed engines.
+* To start an engine, you must have the resources it requires to start, and you must have ignitions remaining.
+* If ullage is enabled for the engine, and your propellant stability is not "Very Stable", there is a chance that vapor can get in the feed lines and the engine will flame out. You will need to set the throttle to 0 to reset things, then stabilize your propellants. Some forward RCS thrust, or thrust from ullage motors like small SRBs (solids and RCS aren't subject to ullage issues) will do that. Then you can try throttling the engine up again to restart it.
+* If the engine is pressure-fed, it requires highly-pressurized tanks (see above for tank descriptions). It will not ignite and run without such tanks.
+
+New parameters in ModuleEnginesRF:
+ullage: Whether ullage simulation is enabled. Defaults to false.
+pressureFed: Whether the engine is pressure-fed. Defaults to false.
+ignitions: the number of ignitions the engine has. Defaults to -1 (unlimited).
+IGNITOR_RESOURCE nodes: If you specify limited ignitions, an engine will consume these resources when it ignites, and will fail to ignite (but still use up an ignition) if they are not available. name defines the resource name (like ElectricCharge) and amount defines the amount required (just like EngineIgnitor).
+
+Note that if you used to configure Engine Ignitor per-CONFIG in RF, those configs are still compatible. You only need to worry about the above parameters if you don't have ModuleEngineIgnitor {} nodes in you CONFIG nodes.
+
+
+*********************
+RealFuels contains code based on that of HoneyFox in EngineIgnitor. Original MIT license follows.
+The MIT License (MIT)
+
+Copyright (c) 2013 HoneyFox
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

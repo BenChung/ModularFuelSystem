@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using UnityEngine;
+
 namespace RealFuels.TechLevels
 {
     public class TechLevel
@@ -61,11 +63,7 @@ namespace RealFuels.TechLevels
         {
             if (globalTechLevels == null)
             {
-                ConfigNode RFEngSettings = null;
-                foreach (ConfigNode node in GameDatabase.Instance.GetConfigNodes("MFSSETTINGS"))
-                    RFEngSettings = node;
-                if (RFEngSettings != null)
-                    globalTechLevels = RFEngSettings.GetNode("MFS_TECHLEVELS");
+                globalTechLevels = RFSettings.Instance.techLevels;
             }
 
             return globalTechLevels != null;
@@ -227,7 +225,7 @@ namespace RealFuels.TechLevels
             }
 
             // check global
-            //print("*RFEng* Fallback to global for type " + type + ", TL " + level);
+            //Debug.Log("*RFEng* Fallback to global for type " + type + ", TL " + level);
             return Load(type, level);
         }
 

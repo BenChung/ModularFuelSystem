@@ -61,7 +61,7 @@ namespace RealFuels.Tanks
 		public override void OnAwake ()
 		{
 			enabled = false;
-			if (!CompatibilityChecker.IsAllCompatible ()) {
+			if (CompatibilityChecker.IsWin64 ()) {
 				compatible = false;
 				Events["HideUI"].active = false;
 				Events["ShowUI"].active = false;
@@ -142,11 +142,11 @@ namespace RealFuels.Tanks
 			if (node.HasValue ("totalVolume") && double.TryParse (node.GetValue ("totalVolume"), out totalVolume)) {
 				ChangeTotalVolume (totalVolume);
 			} else if (node.HasValue ("volume") && double.TryParse (node.GetValue ("volume"), out volume)) {
-				totalVolume = volume * 100 / utilization;
+				totalVolume = volume * 100d / utilization;
 			}
 			using (PartMessageService.Instance.Ignore(this, null, typeof(PartResourcesChanged))) {
 				if (isDatabaseLoad) {
-					overrideListNodes = node.GetNodes("TANK");
+					MFSSettings.SaveOverrideList(part, node.GetNodes("TANK"));
 					ParseBaseMass(node);
 					ParseBaseCost(node);
 					typesAvailable = node.GetValues ("typeAvailable");
@@ -185,11 +185,11 @@ namespace RealFuels.Tanks
 
 			StringBuilder info = new StringBuilder ();
 			info.AppendLine ("Modular Fuel Tank:");
-			info.Append ("	Max Volume: ").Append (volume.ToStringSI (unit: MFSSettings.unitLabel));
+			info.Append ("	Max Volume: ").AppendLine (volume.ToStringSI (unit: MFSSettings.unitLabel));
 			info.AppendLine ("	Tank can hold:");
 			for (int i = 0; i < tankList.Count; i++) {
 				FuelTank tank = tankList[i];
-				info.Append ("	 ").Append (tank).Append (" ").AppendLine (tank.note);
+				info.Append ("		").Append (tank).Append (" ").AppendLine (tank.note);
 			}
 			return info.ToString ();
 		}
@@ -302,31 +302,62 @@ namespace RealFuels.Tanks
 				CalculateTankLossFunction (TimeWarp.fixedDeltaTime);
 			}
 		}
+        double boiloffMass = 0d;
+        public double BoiloffMassRate { get { return boiloffMass; } }
 
 		private void CalculateTankLossFunction (double deltaTime)
 		{
-			for (int i = 0; i < tankList.Count; i++) {
-				FuelTank tank = tankList[i];
+            boiloffMass = 0d;
+            if (vessel != null && vessel.situation == Vessel.Situations.PRELAUNCH)
+            {
+                double minTemp = part.temperature;
+                for (int i = tankList.Count - 1; i >= 0; --i)
+                {
+                    FuelTank tank = tankList[i];
+                    if (tank.amount > 0d && tank.loss_rate > 0d)
+                        minTemp = Math.Min(minTemp, tank.temperature);
+                }
+                part.temperature = minTemp;
+            }
+            else
+            {
+                double deltaTimeRecip = 1d / deltaTime;
+                for (int i = tankList.Count - 1; i >= 0; --i)
+                {
+                    FuelTank tank = tankList[i];
 
-				if (tank.loss_rate > 0 && tank.amount > 0) {
-					double deltaTemp = part.temperature - tank.temperature;
-					if (deltaTemp > 0) {
-						double loss = tank.maxAmount * tank.loss_rate * deltaTemp * deltaTime; // loss_rate is calibrated to 300 degrees.
-						if (loss > tank.amount) {
-							tank.amount = 0;
-						} else {
-							tank.amount -= loss;
-						}
-					}
-				}
-			}
+                    if (tank.loss_rate > 0 && tank.amount > 0)
+                    {
+                        double deltaTemp = part.temperature - tank.temperature;
+                        if (deltaTemp > 0)
+                        {
+                            double lossAmount = tank.maxAmount * tank.loss_rate * deltaTemp * deltaTime;
+                            if(lossAmount > tank.amount)
+                            {
+                                lossAmount = -tank.amount;
+                                tank.amount = 0d;
+                            }
+                            else
+                            {
+                                lossAmount = -lossAmount;
+                                tank.amount += lossAmount;
+                            }
+                            double vsp = 0d;
+                            double massLost = tank.density * lossAmount;
+                            boiloffMass += massLost;
+                            if (MFSSettings.resourceVsps.TryGetValue(tank.name, out vsp))
+                            {
+                                // subtract heat from boiloff
+                                part.AddThermalFlux(massLost * vsp * deltaTimeRecip);
+                            }
+                        }
+                    }
+                }
+            }
 		}
 
 		// The active fuel tanks. This will be the list from the tank type, with any overrides from the part file.
 		internal FuelTankList tankList = new FuelTankList ();
-
-		// List of override nodes as defined in the part file. This is here so that it can get reconstituted after a clone
-		public ConfigNode [] overrideListNodes;
 
 		[KSPField (isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "Tank Type"), UI_ChooseOption (scene = UI_Scene.Editor)]
 		public string type;
@@ -342,12 +373,6 @@ namespace RealFuels.Tanks
 		public Dictionary<string, bool> pressurizedFuels = new Dictionary<string, bool> ();
         [KSPField(guiActiveEditor = true, guiName = "Highly Pressurized?")]
         public bool highlyPressurized = false;
-
-		// Load the list of TANK overrides from the part file
-		private void LoadTankListOverrides (ConfigNode node)
-		{
-			overrideListNodes = node.GetNodes ("TANK");
-		}
 
 		private void InitializeTankType ()
 		{
@@ -446,10 +471,7 @@ namespace RealFuels.Tanks
 			for (int i = 0; i < def.tankList.Count; i++) {
 				FuelTank tank = def.tankList[i];
 				// Pull the override from the list of overrides
-				ConfigNode overNode = null;
-				if (overrideListNodes != null) {
-					overNode = overrideListNodes.FirstOrDefault (n => n.GetValue ("name") == tank.name);
-				}
+				ConfigNode overNode = MFSSettings.GetOverrideList(part).FirstOrDefault(n => n.GetValue("name") == tank.name);
 
 				tankList.Add (tank.CreateCopy (this, overNode, initializeAmounts));
 			}
@@ -563,7 +585,7 @@ namespace RealFuels.Tanks
 
 		public void ChangeTotalVolume (double newTotalVolume, bool propagate = false)
 		{
-			double newVolume = Math.Round (newTotalVolume * utilization / 100);
+			double newVolume = Math.Round (newTotalVolume * utilization * 0.01d, 4);
 			double volumeRatio = newVolume / volume;
 
 			bool doResources = false;
@@ -654,9 +676,8 @@ namespace RealFuels.Tanks
 					basemassConst = 0;
 					return;
 				}
-			} else if (float.TryParse (baseMass.Trim (), out basemassPV)) {
-				basemassPV = (float) (basemassPV / volume);
-				basemassConst = 0;
+			} else if (float.TryParse (baseMass.Trim (), out basemassConst)) {
+				basemassPV = 0f;
 				return;
 			}
 			Debug.LogWarning ("[MFT] Unable to parse basemass \"" + baseMass + "\"");
@@ -680,12 +701,11 @@ namespace RealFuels.Tanks
 			}
 			if (baseCost.Contains ("*") && baseCost.Contains ("volume")) {
 				if (float.TryParse (baseCost.Replace ("volume", "").Replace ("*", "").Trim (), out baseCostPV)) {
-					baseCostConst = 0;
+					baseCostConst = 0f;
 					return;
 				}
-			} else if (float.TryParse (baseCost.Trim (), out baseCostPV)) {
-				baseCostPV = (float) (baseCostPV / volume);
-				baseCostConst = 0;
+			} else if (float.TryParse (baseCost.Trim (), out baseCostConst)) {
+				baseCostPV = 0f;
 				return;
 			}
 			if (baseCost != "") {
@@ -702,7 +722,7 @@ namespace RealFuels.Tanks
 			}
 			massDirty = false;
 
-			double basemass = basemassConst + basemassPV * volume;
+			double basemass = basemassConst + basemassPV * (MFSSettings.basemassUseTotalVolume ? totalVolume : volume);
 
 			if (basemass >= 0) {
 				double tankDryMass = tankList
@@ -887,26 +907,19 @@ namespace RealFuels.Tanks
 		}
 
 		internal readonly Dictionary<string, FuelInfo> usedBy = new Dictionary<string, FuelInfo>();
-		internal int engineCount;
 
-		List<Propellant> GetEnginePropellants (PartModule engine)
-		{
-			string typename = engine.GetType ().ToString ();
-			if (typename.Equals ("ModuleEnginesFX")) {
-				ModuleEnginesFX e = (ModuleEnginesFX)engine;
-				return e.propellants;
-			} else if (typename.Equals ("ModuleEngines")) {
-				ModuleEngines e = (ModuleEngines)engine;
-				return e.propellants;
-			} else if (typename.Equals ("ModuleRCSFX")) {
-				ModuleRCS e = (ModuleRCS)engine;
-				return e.propellants;
-			} else if (typename.Equals ("ModuleRCS")) {
-				ModuleRCS e = (ModuleRCS)engine;
-				return e.propellants;
-			}
-			return null;
-		}
+        private void UpdateFuelInfo(FuelInfo f, string title)
+        {
+            FuelInfo found;
+            if (!usedBy.TryGetValue(f.Label, out found))
+            {
+                usedBy.Add(f.Label, f);
+            }
+            else if (!found.names.Contains(title))
+            {
+                found.names += ", " + title;
+            }
+        }
 
 		private void UpdateUsedBy ()
 		{
@@ -914,25 +927,37 @@ namespace RealFuels.Tanks
 
 			usedBy.Clear ();
 
-			List<Part> enginesList = GetEnginesFedBy (part);
-			engineCount = enginesList.Count;
+            // Get part list
+            List<Part> parts;
+            if (HighLogic.LoadedSceneIsEditor && EditorLogic.fetch.ship != null)
+                parts = EditorLogic.fetch.ship.parts;
+            else if (HighLogic.LoadedSceneIsFlight && vessel != null)
+                parts = vessel.parts;
+            else parts = new List<Part>();
 
-			foreach (Part engine in enginesList) {
-				foreach (PartModule engine_module in engine.Modules) {
-					List<Propellant> propellants = GetEnginePropellants (engine_module);
-					if ((object)propellants != null) {
-						FuelInfo f = new FuelInfo (propellants, this, engine.partInfo.title);
-						if (f.ratioFactor > 0.0) {
-							FuelInfo found;
-							if (!usedBy.TryGetValue (f.Label, out found)) {
-								usedBy.Add (f.Label, f);
-							} else if (!found.names.Contains (engine.partInfo.title)) {
-								found.names += ", " + engine.partInfo.title;
-							}
-						}
-					}
-				}
-			}
+            FuelInfo f;
+            string title;
+            PartModule m;
+            for(int i = 0; i < parts.Count; ++i)
+            {
+                title = parts[i].partInfo.title;
+                for(int j = 0; j < parts[i].Modules.Count; ++j)
+                {
+                    m = parts[i].Modules[j];
+                    if (m is ModuleEngines)
+                    {
+                        f = new FuelInfo((m as ModuleEngines).propellants, this, title);
+                        if(f.ratioFactor > 0d)
+                            UpdateFuelInfo(f, title);
+                    }
+                    else if (m is ModuleRCS)
+                    {
+                        f = new FuelInfo((m as ModuleRCS).propellants, this, title);
+                        if (f.ratioFactor > 0d)
+                            UpdateFuelInfo(f, title);
+                    }
+                }
+            }
 
 			// Need to update the tweakable menu too
 			if (HighLogic.LoadedSceneIsEditor) {
@@ -987,31 +1012,13 @@ namespace RealFuels.Tanks
 			}
 		}
 
-		static bool IsEngine (Part p)
-		{
-			if (p.Modules.Contains ("ModuleEngines")) {
-				return true;
-			}
-			if (p.Modules.Contains ("ModuleEnginesFX")) {
-				return true;
-			}
-			if (p.Modules.Contains ("ModuleRCSFX")) {
-				return true;
-			}
-			if (p.Modules.Contains ("ModuleRCS")) {
-				return true;
-			}
-			return false;
-		}
-
-		public static List<Part> GetEnginesFedBy (Part part)
-		{
-			Part ppart = part;
-			while (ppart.parent != null && ppart.parent != ppart) {
-				ppart = ppart.parent;
-			}
-
-			return new List<Part> (ppart.FindChildParts<Part> (true)).FindAll (p => IsEngine (p));
-		}
+        List<Propellant> GetEnginePropellants(PartModule engine)
+        {
+            if (engine is ModuleEngines)
+                return (engine as ModuleEngines).propellants;
+            else if (engine is ModuleRCS)
+                return (engine as ModuleRCS).propellants;
+            return null;
+        }
 	}
 }

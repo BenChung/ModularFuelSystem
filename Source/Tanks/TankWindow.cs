@@ -96,7 +96,7 @@ namespace RealFuels.Tanks
 		void Awake ()
 		{
 			enabled = false;
-			if (!CompatibilityChecker.IsAllCompatible ()) {
+			if (CompatibilityChecker.IsWin64 ()) {
 				return;
 			}
 			instance = this;
@@ -128,8 +128,10 @@ namespace RealFuels.Tanks
                 posMult = offsetGUIPos;
 			}
             if (ActionGroupMode) {
-                guiWindowRect = new Rect (430 * posMult, 365, 438, (Screen.height - 365));
-                tooltipRect = new Rect (430 * (posMult+1)+10, mousePos.y-5, 300, 20);
+                if (guiWindowRect.width == 0) {
+                    guiWindowRect = new Rect (430 * posMult, 365, 438, (Screen.height - 365));
+                }
+                tooltipRect = new Rect (guiWindowRect.xMin + 440, mousePos.y-5, 300, 20);
             } else {
                 if (guiWindowRect.width == 0) {
                     guiWindowRect = new Rect (Screen.width - 8 - 430 * (posMult+1), 365, 438, (Screen.height - 365));
@@ -204,9 +206,7 @@ namespace RealFuels.Tanks
 				counterTT = 0;
 			}
 			//print ("GT: " + GUI.tooltip);
-			if (!ActionGroupMode) {
-				GUI.DragWindow ();
-			}
+			GUI.DragWindow ();
         }
 
         private static void InitializeStyles ()
@@ -363,7 +363,7 @@ namespace RealFuels.Tanks
         {
 			if (tank_module.usedBy.Count > 0 && tank_module.AvailableVolume >= 0.001) {
 				GUILayout.BeginHorizontal ();
-				GUILayout.Label ("Configure remaining volume for " + tank_module.engineCount + " engines:");
+				GUILayout.Label ("Configure remaining volume for detected engines:");
 				GUILayout.EndHorizontal ();
 
 				foreach (FuelInfo info in tank_module.usedBy.Values)
